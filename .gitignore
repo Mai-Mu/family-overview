@@ -1,0 +1,41 @@
+# Local runtime data, uploads and exported backups
+/data/
+**/uploads/
+**/backups/
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.zip
+*.bak
+*.backup
+*.log
+
+# Temporary test output and Python caches
+.test-artifacts/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Secrets and machine-specific files
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+secrets*.json
+.venv/
+venv/
+node_modules/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+

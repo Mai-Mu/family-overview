@@ -1,0 +1,2168 @@
+{
+  "title": "家庭经济信息收集字段设计",
+  "version": "1.1",
+  "status": "本地应用字段定义；需求和实现说明见项目docs目录",
+  "editable_source": "design/build_field_catalog.py",
+  "scope": {
+    "participants": "支持多个家庭成员；家人共同商讨，由一位维护者统一录入。",
+    "purpose": "盘点家庭家底、定期收支安排、重大和约定开销及承担责任。",
+    "maintenance": "一次基础盘点，之后维护长期规则及重大变化。",
+    "history_start": "从启用时记录，不要求补录历史收支。",
+    "presentation": "清单加逐项详情，常用字段先展示，补充字段展开填写。",
+    "all_inputs_optional": true,
+    "excluded": [
+      "健康与照护的独立信息模块",
+      "每位成员最低保留资金",
+      "预留金额与具体资产或账户的来源关联",
+      "强制每月余额盘点",
+      "强制零散日常消费逐笔或每月汇总",
+      "贷款逐期本金利息明细",
+      "强制实际收付款逐期登记"
+    ]
+  },
+  "input_rules": [
+    "全部用户输入字段均可留空，包括名称、金额、成员、日期、状态、关联项和附件。可以保存完全未填的草稿。",
+    "空白保存为null；未知不是0。只有明确填写的0才表示零金额。",
+    "未命名资产、未命名事项、成员未选择等仅作为界面占位，不写成用户已提供的内容。",
+    "日期可只填年份或年月，未确定时可写说明；不补造具体日期。",
+    "金额可填单一数值或范围；缺少某个边界时保留缺失，不能当成0。",
+    "归属或承担人为多人的，份额允许未知；不默认平均分摊，不默认父母资金可自由调配。",
+    "有内容时核对数值、日期、金额范围和比例；发现矛盾可提示，仍允许保存草稿。",
+    "部分确认、部分估算的记录，可在备注中分别说明。缺少附件不阻止保存，也不自动认定信息可靠或不可靠。",
+    "用户不需要输入技术ID。ID、创建时间、修改时间由未来程序自动维护，不属于必填项。",
+    "账户使用别名，不设置密码、验证码、完整证件号码等采集字段。",
+    "条件字段按类型展开，已填内容在切换类型时保留；所有字段都可在补充区域查看。"
+  ],
+  "aggregation_rules": [
+    "家底显示截至最近盘点日的资产和债务，不将旧盘点值标成实时余额。",
+    "未来收支显示按已收录规则估算的金额，并提示覆盖范围；不称为全家真实结余。",
+    "定期规则产生预计收付款，不自动生成已到账、已支付或已还本金事实。",
+    "缺少金额、币种、时间或频率导致不能推算的项目，显示待补充并计入未参与统计项目数；不按0计。",
+    "不同币种分别汇总，未提供汇率时不转换合并；本版不采集或自动获取汇率。",
+    "金额范围保持范围；未知上界不显示为确定总额。不同口径的金额分别列示。",
+    "已约定与待商讨事项分开汇总，待商讨金额不自动算作已承诺开销。",
+    "累计已付需注明统计起点或范围及截至日期；范围未知时不能直接从总额扣减。",
+    "剩余待付只有在总额、已付、币种、统计范围一致且资料足够时才可计算；也允许按银行计划或人工估算填写并标明依据。",
+    "已预留与已支付分开。预留只表达用途安排，不是新增支出，也不直接减少盘点资产；未关联来源时不做按账户的资金占用核对。",
+    "房贷剩余本金与未来预计本息分别展示，未来还款总额按银行计划或明确约定录入；不把剩余本金当作未来全部付款。",
+    "房贷付款进度和分担约定由关联家庭事项统一保存，在贷款详情直接展示；用户填写这些内容时由未来程序建立关联，不要求另建两份记录或输入技术ID。",
+    "同一房贷、保单或电话费通过关联复用信息。未来收支以关联定期规则为入口，同一付款不因出现在多个页面重复计入。",
+    "持续多年事项不把整个事项总额塞进某一年的预算；缺少时间分配依据时只显示总体需求。",
+    "银行账户中的活期余额和各产品分别记录；账户总额由明细汇总，不能再把包含这些明细的总余额重复加为资产。",
+    "共同资产家庭合计只算一次；份额未知时个人视图单列共同资产，不把整笔同时归给每个人。",
+    "借出款、受限资产、可直接动用资金分别展示；借出款不当作已到账现金。",
+    "家庭内部转账、支持和相互借贷保留个人关系，家庭合并视图抵销内部往来；内部范围待确认的记录单独提示。",
+    "担保等潜在责任单列，确认形成欠款时关联已建立的债务记录，避免重复累加同一责任金额。",
+    "保额不作为资产；保障摘要、保费规则、养老金收入分别关联，避免重复计收支。",
+    "各人分担金额和比例均选填；两者都有时不重复计作两份分担，不明部分显示待商议。"
+  ],
+  "lifecycle_rules": [
+    "规则和约定变更时保留生效时间、修改时间和旧版本，变更原因选填；不要求用户逐月新建快照。",
+    "暂停、终止或取消改变之后的预计安排，保留已有确认资料及已付统计。",
+    "资产或债务金额更新时保留该次金额的截至日期和来源；旧版本供回看，不自动视为另一笔资产或债务。",
+    "附件关联具体记录；资料日期、展示名称和说明可选填。正文记录不依赖附件才能保存。"
+  ],
+  "field_types": {
+    "text": "短文字",
+    "long_text": "多行文字",
+    "choice": "可不选择的选项",
+    "money": "十进制金额；币种单独记录；空白与0不同",
+    "money_or_range": "单一金额，或下限/上限范围，所有分量均可留空",
+    "currency": "币种文字或选择，不填则保持未确认",
+    "partial_date": "YYYY、YYYY-MM或YYYY-MM-DD；日期范围由起止字段或说明表达",
+    "year": "年份",
+    "integer": "整数",
+    "decimal": "十进制数",
+    "percentage": "百分比；不是默认分担值",
+    "reference": "关联一条已有记录，可不关联",
+    "references": "关联多个成员或记录，可不选择",
+    "allocation_rows": "可选分担行；各子字段同样全部选填",
+    "attachment_list": "可选附件集合，文件与原始记录关联"
+  },
+  "shared_fields": [
+    {
+      "key": "information_source",
+      "label": "资料来源",
+      "type": "choice",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "note": "",
+      "display": "常用项",
+      "options": [
+        "家庭共同讨论",
+        "本人陈述",
+        "银行或机构记录",
+        "合同或协议",
+        "保单",
+        "账单或报价",
+        "其他"
+      ]
+    },
+    {
+      "key": "source_note",
+      "label": "来源补充说明",
+      "type": "text",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "note": "例如材料名称、口头说明人或数据查询位置。",
+      "display": "展开项"
+    },
+    {
+      "key": "verification_status",
+      "label": "核实状态",
+      "type": "choice",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "note": "允许暂不选择；不根据是否有附件自动认定已核实。",
+      "display": "常用项",
+      "options": [
+        "已核实",
+        "估算",
+        "待确认"
+      ]
+    },
+    {
+      "key": "last_confirmed_on",
+      "label": "最后确认日期",
+      "type": "partial_date",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "note": "与资产或债务金额本身的截至日期分开。",
+      "display": "常用项"
+    },
+    {
+      "key": "attachments",
+      "label": "相关资料附件",
+      "type": "attachment_list",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "note": "支持图片、PDF、合同、保单、截图等；附件可不添加。",
+      "display": "常用项"
+    },
+    {
+      "key": "notes",
+      "label": "补充说明",
+      "type": "long_text",
+      "required": false,
+      "nullable": true,
+      "default": null,
+      "note": "",
+      "display": "常用项"
+    }
+  ],
+  "nested_schemas": {
+    "allocation_rows": [
+      {
+        "key": "member_id",
+        "label": "承担人",
+        "type": "reference",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "",
+        "display": "常用项",
+        "references": "members"
+      },
+      {
+        "key": "amount",
+        "label": "承担金额",
+        "type": "money",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "",
+        "display": "常用项"
+      },
+      {
+        "key": "percentage",
+        "label": "承担比例",
+        "type": "percentage",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "",
+        "display": "常用项"
+      },
+      {
+        "key": "agreement_note",
+        "label": "分担说明",
+        "type": "long_text",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "只填成员和文字约定也可以；不自动平均分摊。",
+        "display": "常用项"
+      }
+    ],
+    "money_or_range": [
+      {
+        "key": "value",
+        "label": "单一金额",
+        "type": "money",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "单一金额模式下填写；不与范围重复统计。",
+        "display": "常用项"
+      },
+      {
+        "key": "lower",
+        "label": "范围下限",
+        "type": "money",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "缺少下限时保留未知。",
+        "display": "常用项"
+      },
+      {
+        "key": "upper",
+        "label": "范围上限",
+        "type": "money",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "缺少上限时保留未知。",
+        "display": "常用项"
+      }
+    ],
+    "attachment_info": [
+      {
+        "key": "display_name",
+        "label": "资料展示名称",
+        "type": "text",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "可以使用原文件名的展示值。",
+        "display": "常用项"
+      },
+      {
+        "key": "material_date",
+        "label": "资料日期",
+        "type": "partial_date",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "",
+        "display": "常用项"
+      },
+      {
+        "key": "material_note",
+        "label": "资料说明",
+        "type": "long_text",
+        "required": false,
+        "nullable": true,
+        "default": null,
+        "note": "",
+        "display": "常用项"
+      }
+    ]
+  },
+  "modules": [
+    {
+      "key": "members",
+      "name": "家庭成员",
+      "purpose": "记录家庭成员，提供可编辑的角色模板并支持新增成员。",
+      "update_timing": "首次整理；基本情况变化时更新。",
+      "fields": [
+        {
+          "key": "display_name",
+          "label": "称呼",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "family_role",
+          "label": "家庭角色",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "本人",
+            "父亲",
+            "母亲",
+            "其他"
+          ]
+        },
+        {
+          "key": "birth_year",
+          "label": "出生年份",
+          "type": "year",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "living_region",
+          "label": "常住地区",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "城市或地区即可。",
+          "display": "展开项"
+        },
+        {
+          "key": "work_status",
+          "label": "工作或退休状态",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "在职",
+            "退休",
+            "经营或灵活就业",
+            "暂未就业",
+            "其他"
+          ]
+        },
+        {
+          "key": "expected_retirement_on",
+          "label": "预计退休时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        }
+      ],
+      "list_fields": [
+        "display_name",
+        "family_role",
+        "work_status"
+      ]
+    },
+    {
+      "key": "assets",
+      "name": "资产盘点",
+      "purpose": "一项资产一条记录；共同资产在家庭内只登记一次。",
+      "update_timing": "首次盘点；重大变化时更新，不要求每月盘点。",
+      "fields": [
+        {
+          "key": "asset_name",
+          "label": "资产名称或别名",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "asset_category",
+          "label": "资产类别",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "现金",
+            "银行活期",
+            "定期存款",
+            "理财",
+            "基金",
+            "股票",
+            "债券",
+            "公积金",
+            "房产",
+            "车辆",
+            "其他"
+          ]
+        },
+        {
+          "key": "owner_ids",
+          "label": "所有人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "ownership_note",
+          "label": "共有份额说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "份额不清楚时只写共同所有；个人汇总不默认平分。",
+          "display": "展开项"
+        },
+        {
+          "key": "institution_or_location",
+          "label": "机构或位置",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "银行、平台名称，或房产所在区域等。",
+          "display": "常用项"
+        },
+        {
+          "key": "account_alias",
+          "label": "账户别名",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "用于分组辨认，例如某银行工资卡；不要求完整账号。",
+          "display": "展开项"
+        },
+        {
+          "key": "value",
+          "label": "当前金额或估值",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "填写本家庭实际持有部分的价值；允许填范围。",
+          "display": "常用项"
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "不填时不假定币种；不同币种分别汇总。",
+          "display": "常用项"
+        },
+        {
+          "key": "value_as_of",
+          "label": "金额或估值截至日期",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "valuation_basis",
+          "label": "金额依据",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "账户或机构记录",
+            "市场估值",
+            "购入金额",
+            "本人估算",
+            "其他"
+          ]
+        },
+        {
+          "key": "acquisition_cost",
+          "label": "购入成本或投入本金",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "已有信息时选填，不要求补历史交易。",
+          "display": "展开项"
+        },
+        {
+          "key": "maturity_on",
+          "label": "到期时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "availability",
+          "label": "可动用情况",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "可随时动用",
+            "到期后可用",
+            "需要赎回或出售",
+            "受到限制",
+            "待确认"
+          ]
+        },
+        {
+          "key": "availability_note",
+          "label": "变现或使用条件",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "designated_use",
+          "label": "已有指定用途",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "文字说明即可，不关联重大事项的预留资金。",
+          "display": "展开项"
+        }
+      ],
+      "list_fields": [
+        "asset_name",
+        "owner_ids",
+        "value",
+        "currency",
+        "value_as_of",
+        "availability"
+      ]
+    },
+    {
+      "key": "liabilities",
+      "name": "负债与借款",
+      "purpose": "银行贷款、分期、信用欠款和亲友借款统一逐笔登记。房贷采用概况加还款规则。",
+      "update_timing": "首次盘点；还款安排、利率、期限、承担人或余额有重大变化时更新。",
+      "fields": [
+        {
+          "key": "liability_name",
+          "label": "负债名称",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "liability_type",
+          "label": "负债类别",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "房贷",
+            "车贷",
+            "其他银行贷款",
+            "信用卡欠款",
+            "消费分期",
+            "亲友借款",
+            "其他"
+          ]
+        },
+        {
+          "key": "creditor_alias",
+          "label": "债权方或贷款机构",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "borrower_ids",
+          "label": "借款人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "payer_ids",
+          "label": "实际承担人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "counterparty_scope",
+          "label": "往来范围",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "家庭外部",
+            "家庭内部",
+            "待确认"
+          ]
+        },
+        {
+          "key": "internal_creditor_id",
+          "label": "家庭内部债权人",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "members"
+        },
+        {
+          "key": "original_principal",
+          "label": "原借款本金",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "已知时填写，不要求还原历史还款。",
+          "display": "展开项"
+        },
+        {
+          "key": "remaining_principal",
+          "label": "当前剩余本金或欠款余额",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "balance_as_of",
+          "label": "余额截至日期",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "annual_interest_rate",
+          "label": "年利率",
+          "type": "percentage",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "rate_type",
+          "label": "利率类型",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "固定",
+            "浮动",
+            "无息",
+            "待确认"
+          ]
+        },
+        {
+          "key": "rate_note",
+          "label": "利率及调整说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "repayment_method",
+          "label": "还款方式",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "等额本息",
+            "等额本金",
+            "到期还本",
+            "分期约定",
+            "其他",
+            "待确认"
+          ]
+        },
+        {
+          "key": "regular_payment",
+          "label": "每期还款额",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "payment_frequency",
+          "label": "还款频率",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "每月",
+            "每季",
+            "每半年",
+            "每年",
+            "其他"
+          ]
+        },
+        {
+          "key": "payment_schedule",
+          "label": "扣款日或付款约定",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "例如每月20日。",
+          "display": "常用项"
+        },
+        {
+          "key": "remaining_periods",
+          "label": "剩余期数",
+          "type": "integer",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "maturity_on",
+          "label": "到期或预计还清时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "future_payment_estimate",
+          "label": "未来预计还款总额",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "按银行计划或已确认约定选填；不直接用剩余本金替代。",
+          "display": "展开项"
+        },
+        {
+          "key": "future_payment_basis",
+          "label": "预计还款依据",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "payer_allocations",
+          "label": "按人分担明细",
+          "type": "allocation_rows",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "repayment_agreement",
+          "label": "还款及提前还款约定",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "linked_recurring_rule_id",
+          "label": "关联定期还款规则",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "recurring_rules"
+        },
+        {
+          "key": "linked_commitment_id",
+          "label": "关联家庭约定事项",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "commitments"
+        },
+        {
+          "key": "linked_asset_id",
+          "label": "相关资产",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "assets"
+        }
+      ],
+      "list_fields": [
+        "liability_name",
+        "borrower_ids",
+        "payer_ids",
+        "remaining_principal",
+        "balance_as_of",
+        "regular_payment",
+        "maturity_on"
+      ]
+    },
+    {
+      "key": "receivables",
+      "name": "借出款",
+      "purpose": "记录别人欠家庭成员的钱，与可直接使用的存款分开展示。",
+      "update_timing": "首次盘点；收回、延期或约定变化时更新。",
+      "fields": [
+        {
+          "key": "receivable_name",
+          "label": "借出款名称",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "owner_ids",
+          "label": "资金归属人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "debtor_alias",
+          "label": "借款方称呼",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "counterparty_scope",
+          "label": "往来范围",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "家庭外部",
+            "家庭内部",
+            "待确认"
+          ]
+        },
+        {
+          "key": "internal_debtor_id",
+          "label": "家庭内部借款人",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "members"
+        },
+        {
+          "key": "original_amount",
+          "label": "原借出金额",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "remaining_amount",
+          "label": "尚未收回金额",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "balance_as_of",
+          "label": "余额截至日期",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "lent_on",
+          "label": "借出时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "expected_return_on",
+          "label": "预计收回时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "repayment_agreement",
+          "label": "归还或分期约定",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "interest_agreement",
+          "label": "利息约定",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "collection_status",
+          "label": "回收情况",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "正常履约",
+            "待约定",
+            "延期",
+            "存在不确定性",
+            "已收回",
+            "其他"
+          ]
+        },
+        {
+          "key": "linked_liability_id",
+          "label": "对应家庭内部欠款",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "liabilities"
+        },
+        {
+          "key": "linked_income_rule_id",
+          "label": "关联约定收款规则",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "recurring_rules"
+        }
+      ],
+      "list_fields": [
+        "receivable_name",
+        "owner_ids",
+        "debtor_alias",
+        "remaining_amount",
+        "expected_return_on",
+        "collection_status"
+      ]
+    },
+    {
+      "key": "guarantees",
+      "name": "担保责任",
+      "purpose": "单独展示可能承担的责任，记录已确认的条件和金额。",
+      "update_timing": "首次盘点；责任、期限或触发情况变化时更新。",
+      "fields": [
+        {
+          "key": "guarantee_name",
+          "label": "担保事项",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "guarantor_ids",
+          "label": "担保人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "related_party_alias",
+          "label": "被担保方或相关方",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "creditor_alias",
+          "label": "债权方",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "exposure_amount",
+          "label": "可能涉及的金额或范围",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "trigger_conditions",
+          "label": "可能需要承担费用的条件",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "starts_on",
+          "label": "起始时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "ends_on",
+          "label": "期限或结束时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "status",
+          "label": "责任状态",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "生效中",
+            "变化待确认",
+            "已解除",
+            "待确认"
+          ]
+        },
+        {
+          "key": "responsibility_note",
+          "label": "责任及变化说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "linked_liability_id",
+          "label": "确认形成欠款后的关联记录",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "liabilities"
+        },
+        {
+          "key": "linked_commitment_id",
+          "label": "关联家庭事项",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "commitments"
+        }
+      ],
+      "list_fields": [
+        "guarantee_name",
+        "guarantor_ids",
+        "exposure_amount",
+        "ends_on",
+        "status"
+      ]
+    },
+    {
+      "key": "recurring_rules",
+      "name": "定期收支规则",
+      "purpose": "维护长期规则，变化时修改；工资、水电、电话费、保费、房贷等统一归集。",
+      "update_timing": "首次建立；金额、频率、起止时间或承担安排变化时更新。",
+      "fields": [
+        {
+          "key": "rule_name",
+          "label": "项目名称",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "direction",
+          "label": "收支方向",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "收入",
+            "支出",
+            "家庭内部支持或转账"
+          ]
+        },
+        {
+          "key": "category",
+          "label": "项目类别",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "工资",
+            "奖金",
+            "养老金",
+            "租金",
+            "利息或分红",
+            "经营收入",
+            "水电燃气",
+            "电话网络",
+            "日常固定费用",
+            "房贷",
+            "其他还款",
+            "医保或保费",
+            "其他"
+          ]
+        },
+        {
+          "key": "income_owner_ids",
+          "label": "收入归属人或转账收款人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "payer_ids",
+          "label": "支出承担人或转账付款人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "benefiting_member_ids",
+          "label": "费用涉及或受益成员",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "members"
+        },
+        {
+          "key": "counterparty_alias",
+          "label": "外部收付款方",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "expected_amount",
+          "label": "每期预计金额或范围",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "收入以预计到手金额、支出以预计支付金额为口径。",
+          "display": "常用项"
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "frequency",
+          "label": "频率",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "每周",
+            "每月",
+            "每季",
+            "每半年",
+            "每年",
+            "其他"
+          ]
+        },
+        {
+          "key": "schedule_note",
+          "label": "收付款时点",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "例如每月10日、每年一月；不要求精确到某一天。",
+          "display": "常用项"
+        },
+        {
+          "key": "effective_from",
+          "label": "生效时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "effective_until",
+          "label": "结束时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "status",
+          "label": "规则状态",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "生效",
+            "暂停",
+            "终止",
+            "待确认"
+          ]
+        },
+        {
+          "key": "amount_change_note",
+          "label": "浮动或调整说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "payer_allocations",
+          "label": "分担金额或比例",
+          "type": "allocation_rows",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "agreement_note",
+          "label": "约定说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "linked_asset_id",
+          "label": "相关资产",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "assets"
+        },
+        {
+          "key": "linked_liability_id",
+          "label": "相关负债",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "liabilities"
+        },
+        {
+          "key": "linked_commitment_id",
+          "label": "相关家庭约定事项",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "commitments"
+        },
+        {
+          "key": "linked_protection_id",
+          "label": "相关保障记录",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "protection"
+        }
+      ],
+      "list_fields": [
+        "rule_name",
+        "direction",
+        "income_owner_ids",
+        "payer_ids",
+        "expected_amount",
+        "frequency",
+        "schedule_note",
+        "status"
+      ]
+    },
+    {
+      "key": "commitments",
+      "name": "重大及约定事项",
+      "purpose": "一家人讨论后手动纳入，金额不限；同时容纳已约定和待商讨事项。",
+      "update_timing": "首次整理；形成约定、付款进展或其他重要变化时更新。",
+      "fields": [
+        {
+          "key": "title",
+          "label": "事项名称",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "purpose",
+          "label": "用途或事项说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "spending_pattern",
+          "label": "开销形式",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "一次性",
+            "定期",
+            "分阶段",
+            "贷款还款",
+            "其他"
+          ]
+        },
+        {
+          "key": "involved_member_ids",
+          "label": "涉及成员",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "status",
+          "label": "事项状态",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "待商讨",
+            "已约定",
+            "进行中",
+            "已完成",
+            "暂停",
+            "取消"
+          ]
+        },
+        {
+          "key": "priority",
+          "label": "家庭优先级",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "优先保障",
+            "正常安排",
+            "有余力再考虑",
+            "尚未确定"
+          ]
+        },
+        {
+          "key": "planned_start",
+          "label": "计划发生或开始时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "planned_end",
+          "label": "计划结束时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "timing_note",
+          "label": "时间安排说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "日期未定时可以只填文字。",
+          "display": "展开项"
+        },
+        {
+          "key": "total_amount",
+          "label": "预计或约定总额",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "total_amount_basis",
+          "label": "总额口径",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "初步估算",
+            "家庭已约定",
+            "合同或报价",
+            "实际结算",
+            "待确认"
+          ]
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "confirmed_paid_amount",
+          "label": "累计已确认支付金额",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "paid_period_start",
+          "label": "已付金额统计起点",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "可以从本次启用日开始；不要求补历史付款。",
+          "display": "展开项"
+        },
+        {
+          "key": "paid_as_of",
+          "label": "已付金额截至日期",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "payment_scope_note",
+          "label": "累计付款范围说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "例如仅含启用后付款，或已包含此前已知付款。",
+          "display": "展开项"
+        },
+        {
+          "key": "remaining_payment",
+          "label": "剩余待付或预计待付金额",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "remaining_payment_basis",
+          "label": "待付金额依据",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "同一范围的总额减已付",
+            "银行还款计划",
+            "家庭估算",
+            "其他",
+            "待确认"
+          ]
+        },
+        {
+          "key": "reserved_amount",
+          "label": "已预留金额",
+          "type": "money",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "只记录金额，不关联账户或具体资产；不自动从资产余额扣除。",
+          "display": "常用项"
+        },
+        {
+          "key": "payer_ids",
+          "label": "承担人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "allocations",
+          "label": "各人承担金额或比例",
+          "type": "allocation_rows",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "允许只填承担人或文字约定。",
+          "display": "展开项"
+        },
+        {
+          "key": "external_share_note",
+          "label": "其他人员参与或分担说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "agreement_note",
+          "label": "家庭约定说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "linked_recurring_rule_ids",
+          "label": "关联定期收支规则",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "recurring_rules"
+        },
+        {
+          "key": "linked_liability_id",
+          "label": "关联贷款或其他负债",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "liabilities"
+        }
+      ],
+      "list_fields": [
+        "title",
+        "total_amount",
+        "planned_start",
+        "payer_ids",
+        "status",
+        "priority",
+        "remaining_payment"
+      ]
+    },
+    {
+      "key": "protection",
+      "name": "养老医保及商业保险摘要",
+      "purpose": "只记录关键保障摘要；缴费和养老金领取关联定期收支规则。",
+      "update_timing": "首次整理；参保、保单、缴费或领取安排发生变化时更新。",
+      "fields": [
+        {
+          "key": "protection_name",
+          "label": "保障项目名称",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "protection_type",
+          "label": "保障类别",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "养老",
+            "医保",
+            "商业保险",
+            "其他"
+          ]
+        },
+        {
+          "key": "covered_member_ids",
+          "label": "参保人或被保险人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "references": "members"
+        },
+        {
+          "key": "provider",
+          "label": "经办机构或保险公司",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "participation_region",
+          "label": "参保或办理地区",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "status",
+          "label": "当前状态",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项",
+          "options": [
+            "在缴",
+            "保障有效",
+            "领取中",
+            "停缴或暂停",
+            "已结束",
+            "待确认"
+          ]
+        },
+        {
+          "key": "scheme_or_policy_type",
+          "label": "制度或险种名称",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "按已有材料填写具体名称。",
+          "display": "常用项"
+        },
+        {
+          "key": "coverage_summary",
+          "label": "关键保障内容",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "按材料或共同确认的摘要填写。",
+          "display": "常用项"
+        },
+        {
+          "key": "starts_on",
+          "label": "生效或起始时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "ends_on",
+          "label": "保障或安排结束时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "contribution_years",
+          "label": "已缴费年限",
+          "type": "decimal",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "show_when": "protection_type == 养老"
+        },
+        {
+          "key": "pension_start_on",
+          "label": "已开始或预计开始领取时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "show_when": "protection_type == 养老"
+        },
+        {
+          "key": "pension_amount_basis",
+          "label": "养老金金额口径",
+          "type": "choice",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "options": [
+            "当前已领取",
+            "机构查询的预计金额",
+            "本人估算",
+            "待确认"
+          ],
+          "show_when": "protection_type == 养老"
+        },
+        {
+          "key": "pension_amount",
+          "label": "每期养老金金额或范围",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "show_when": "protection_type == 养老"
+        },
+        {
+          "key": "pension_frequency",
+          "label": "养老金领取频率",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "例如每月。",
+          "display": "展开项",
+          "show_when": "protection_type == 养老"
+        },
+        {
+          "key": "medical_participation_note",
+          "label": "医保参保及缴费情况",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "show_when": "protection_type == 医保"
+        },
+        {
+          "key": "policyholder_ids",
+          "label": "投保人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "members"
+        },
+        {
+          "key": "premium_payer_ids",
+          "label": "缴费承担人",
+          "type": "references",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "members"
+        },
+        {
+          "key": "policy_alias",
+          "label": "保单别名或尾号",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "show_when": "protection_type == 商业保险"
+        },
+        {
+          "key": "insured_amount",
+          "label": "保额或保障额度",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "保额单独展示，不计入资产金额。",
+          "display": "展开项",
+          "show_when": "protection_type == 商业保险"
+        },
+        {
+          "key": "beneficiary_note",
+          "label": "受益安排说明",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "show_when": "protection_type == 商业保险"
+        },
+        {
+          "key": "premium_amount",
+          "label": "每期缴费金额或范围",
+          "type": "money_or_range",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "currency",
+          "label": "币种",
+          "type": "currency",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "premium_frequency",
+          "label": "缴费频率或周期",
+          "type": "text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "常用项"
+        },
+        {
+          "key": "premium_end_on",
+          "label": "缴费结束时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "next_renewal_on",
+          "label": "下次续保或缴费时间",
+          "type": "partial_date",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项"
+        },
+        {
+          "key": "important_terms_summary",
+          "label": "关键条款摘要",
+          "type": "long_text",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "例如保单明确约定的额度、免赔或限制；不收集病历和照护信息。",
+          "display": "展开项",
+          "show_when": "protection_type == 商业保险"
+        },
+        {
+          "key": "linked_income_rule_id",
+          "label": "养老金等关联收入规则",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "recurring_rules"
+        },
+        {
+          "key": "linked_expense_rule_id",
+          "label": "缴费关联支出规则",
+          "type": "reference",
+          "required": false,
+          "nullable": true,
+          "default": null,
+          "note": "",
+          "display": "展开项",
+          "references": "recurring_rules"
+        }
+      ],
+      "list_fields": [
+        "protection_name",
+        "covered_member_ids",
+        "protection_type",
+        "status",
+        "ends_on",
+        "premium_amount"
+      ]
+    }
+  ],
+  "system_fields": [
+    {
+      "key": "id",
+      "input": false,
+      "generated": true,
+      "note": "记录技术标识，未来由程序生成。"
+    },
+    {
+      "key": "created_at",
+      "input": false,
+      "generated": true,
+      "note": "首次保存时间。"
+    },
+    {
+      "key": "updated_at",
+      "input": false,
+      "generated": true,
+      "note": "最近修改时间。"
+    }
+  ],
+  "implementation_handoff": [
+    "本稿定义信息内容与记录口径；本地应用的需求和实现说明见项目docs目录。",
+    "未来SQLite中业务输入列和关联均允许NULL；仅技术主键和自动时间戳不需要人工填写。",
+    "金额宜采用明确精度的十进制表示，或币种明确后采用最小货币单位整数，不以二进制浮点作为唯一金额值。",
+    "多成员、选填分担和附件宜用关联记录保存；不以逗号拼接文本替代需要查询的关联关系。",
+    "明细关联不存在时仍可保存草稿；不能引用不存在的已保存对象。",
+    "这是字段设计文档，页面中的表格不承担实际录入或保存功能。"
+  ]
+}
